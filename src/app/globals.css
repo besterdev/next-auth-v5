@@ -54,9 +54,10 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply h-full bg-background text-foreground;
   }
 }
+
 
 main, nav {
   @apply max-w-6xl mx-auto my-12;
