@@ -4,9 +4,11 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import * as z from "zod";
 import bcrypt from "bcryptjs";
 
-import { getUserByEmail } from "@/data/user";
 import { db } from "@/lib/db";
+import { generateVerificationToken } from "@/lib/tokens";
+import { sendVerificationEmail } from "@/lib/mail";
 
+import { getUserByEmail } from "@/data/user";
 import { RegisterSchema } from "@/schemas";
 
 export const register = async (values: z.infer<typeof RegisterSchema>) => {
@@ -35,5 +37,9 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
     },
   });
 
-  return { success: "User created! 🎉" };
+  const verificationToken = await generateVerificationToken(email);
+
+  await sendVerificationEmail(verificationToken.email, verificationToken.token);
+
+  return { success: "Confirmation email sent! 🎉" };
 };
