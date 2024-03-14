@@ -25,8 +25,8 @@ import { FormSuccess } from "@/components/form-success";
 
 const RegisterForm = () => {
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState<string | undefined>("");
+  const [success, setSuccess] = useState<string | undefined>("");
 
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -44,15 +44,8 @@ const RegisterForm = () => {
     startTransition(() => {
       register(values)
         .then((data) => {
-          if (data?.error) {
-            form.reset();
-            setError(data.error);
-          }
-
-          if (data?.success) {
-            form.reset();
-            setSuccess(data.success);
-          }
+          setError(data.error);
+          setSuccess(data.success);
         })
         .catch(() => setError("Something went wrong"));
     });
