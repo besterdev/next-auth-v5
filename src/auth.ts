@@ -3,6 +3,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 
 import { db } from "@/lib/db";
 import { getUserById } from "@/data/user";
+import { getAccountByUserId } from "@/data/account";
 
 import authConfig from "@/auth.config";
 import { UserRole } from "@prisma/client";
@@ -13,6 +14,7 @@ export const {
   auth,
   signIn,
   signOut,
+  unstable_update,
 } = NextAuth({
   pages: {
     signIn: "/auth/login",
@@ -63,6 +65,12 @@ export const {
         session.user.isTwoFactorEnabled = token.isTwoFactorEnabled;
       }
 
+      if (session.user) {
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.isOAuth = token.isOAuth;
+      }
+
       return session;
     },
     async jwt({ token }) {
@@ -72,8 +80,13 @@ export const {
 
       if (!user) return token;
 
+      const account = await getAccountByUserId(user.id);
+
+      token.name = user.name;
+      token.email = user.email;
       token.role = user.role;
       token.isTwoFactorEnabled = user.isTwoFactorEnabled;
+      token.isOAuth = !!account;
 
       return token;
     },
