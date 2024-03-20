@@ -37,7 +37,7 @@ export default function Home() {
         </h1>
         <p>A simple authentication service</p>
         <div>
-          <LoginButton>
+          <LoginButton mode="modal" asChild>
             <Button size="lg">Sign in</Button>
           </LoginButton>
         </div>

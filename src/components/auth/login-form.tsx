@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
-import { useSearchParams } from "next/navigation";
+import { ScaleLoader } from "react-spinners";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { login } from "@/actions/login";
@@ -22,7 +24,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/form-error";
 import { FormSuccess } from "@/components/form-success";
-import Link from "next/link";
 
 const LoginForm = () => {
   const [isPending, startTransition] = useTransition();
@@ -31,6 +32,7 @@ const LoginForm = () => {
   const [success, setSuccess] = useState<string | undefined>("");
 
   const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? undefined;
   const urlError =
     searchParams.get("error") === "OAuthAccountNotLinked"
       ? "Email already in use with different provider!"
@@ -49,19 +51,15 @@ const LoginForm = () => {
     setSuccess("");
 
     startTransition(() => {
-      login(values)
+      login(values, callbackUrl)
         .then((data) => {
           if (data?.error) {
             form.reset();
             setError(data.error);
-          }
-
-          if (data?.success) {
+          } else if (data?.success) {
             form.reset();
             setSuccess(data.success);
-          }
-
-          if (data?.twoFactor) {
+          } else if (data?.twoFactor) {
             setIsShowTwoFactor(true);
           }
         })
@@ -79,7 +77,7 @@ const LoginForm = () => {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
-            {isShowTwoFactor && (
+            {isShowTwoFactor ? (
               <FormField
                 control={form.control}
                 name="code"
@@ -97,8 +95,7 @@ const LoginForm = () => {
                   </FormItem>
                 )}
               />
-            )}
-            {!isShowTwoFactor && (
+            ) : (
               <>
                 <FormField
                   control={form.control}
@@ -142,10 +139,16 @@ const LoginForm = () => {
               </>
             )}
           </div>
-          <FormError message={error || urlError} />
+          <FormError message={error ?? urlError} />
           <FormSuccess message={success} />
           <Button disabled={isPending} type="submit" className="w-full">
-            {isShowTwoFactor ? "Confirm" : "Login"}
+            {isPending ? (
+              <ScaleLoader color="#FFF" height={20} />
+            ) : isShowTwoFactor ? (
+              "Confirm"
+            ) : (
+              "Login"
+            )}
           </Button>
         </form>
       </Form>

@@ -1,30 +1,12 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { useState, useTransition } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useTransition, useState } from "react";
+import { useSession } from "next-auth/react";
 
-import { settings } from "@/actions/settings";
-
-import { useCurrentUser } from "@/hooks/use-current-user";
-
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-
-import { SettingsSchema } from "@/schemas";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { FormError } from "@/components/form-error";
-import { FormSuccess } from "@/components/form-success";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -32,25 +14,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SettingsSchema } from "@/schemas";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { settings } from "@/actions/settings";
+import {
+  Form,
+  FormField,
+  FormControl,
+  FormItem,
+  FormLabel,
+  FormDescription,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { FormError } from "@/components/form-error";
+import { FormSuccess } from "@/components/form-success";
 import { UserRole } from "@prisma/client";
-import { Switch } from "@/components/ui/switch";
 
 const SettingsPage = () => {
+  const user = useCurrentUser();
+
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
+  const { update } = useSession();
   const [isPending, startTransition] = useTransition();
-
-  const user = useCurrentUser();
 
   const form = useForm<z.infer<typeof SettingsSchema>>({
     resolver: zodResolver(SettingsSchema),
     defaultValues: {
-      name: user?.name ?? undefined,
-      email: user?.email ?? undefined,
-      password: undefined,
-      newPassword: undefined,
-      role: user?.role ?? undefined,
-      isTwoFactorEnabled: user?.isTwoFactorEnabled ?? undefined,
+      password: "",
+      newPassword: "",
+      name: user?.name || undefined,
+      email: user?.email || undefined,
+      role: user?.role || undefined,
+      isTwoFactorEnabled: user?.isTwoFactorEnabled || undefined,
     },
   });
 
@@ -63,10 +62,11 @@ const SettingsPage = () => {
           }
 
           if (data.success) {
+            update();
             setSuccess(data.success);
           }
         })
-        .catch(() => setError("Something went wrong"));
+        .catch(() => setError("Something went wrong!"));
     });
   };
 
@@ -88,7 +88,7 @@ const SettingsPage = () => {
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Name"
+                        placeholder="John Doe"
                         disabled={isPending}
                       />
                     </FormControl>
@@ -107,9 +107,10 @@ const SettingsPage = () => {
                         <FormControl>
                           <Input
                             {...field}
-                            placeholder="example@ex.com"
+                            placeholder="john.doe@example.com"
                             type="email"
                             disabled={isPending}
+                            autoComplete="username"
                           />
                         </FormControl>
                         <FormMessage />
@@ -125,9 +126,10 @@ const SettingsPage = () => {
                         <FormControl>
                           <Input
                             {...field}
-                            placeholder="*******"
+                            placeholder="******"
                             type="password"
                             disabled={isPending}
+                            autoComplete="current-password"
                           />
                         </FormControl>
                         <FormMessage />
@@ -139,13 +141,14 @@ const SettingsPage = () => {
                     name="newPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>New password</FormLabel>
+                        <FormLabel>New Password</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
-                            placeholder="*******"
+                            placeholder="******"
                             type="password"
                             disabled={isPending}
+                            autoComplete="new-password"
                           />
                         </FormControl>
                         <FormMessage />
@@ -161,9 +164,9 @@ const SettingsPage = () => {
                   <FormItem>
                     <FormLabel>Role</FormLabel>
                     <Select
+                      disabled={isPending}
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      disabled={isPending}
                     >
                       <FormControl>
                         <SelectTrigger>
