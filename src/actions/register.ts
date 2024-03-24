@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
 import * as z from "zod";
 import bcrypt from "bcryptjs";
 
@@ -16,7 +15,7 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
 
   if (!validatedFields.success) {
     return {
-      error: "Invalid fields! ❌",
+      error: "Invalid fields!",
     };
   }
 
@@ -41,5 +40,5 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
 
   await sendVerificationEmail(verificationToken.email, verificationToken.token);
 
-  return { success: "Confirmation email sent! 🎉" };
+  return { success: "Confirmation email sent!" };
 };

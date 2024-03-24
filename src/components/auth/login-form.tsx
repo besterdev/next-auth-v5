@@ -7,13 +7,17 @@ import { useForm } from "react-hook-form";
 import { ScaleLoader } from "react-spinners";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+
 import { login } from "@/actions/login";
 
-import { LoginSchema } from "@/schemas";
+import { toast } from "sonner";
+import { MdError } from "react-icons/md";
+import { FaCheckCircle } from "react-icons/fa";
 
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -22,14 +26,17 @@ import {
 import { CardWrapper } from "@/components/auth/card-wrapper";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FormError } from "@/components/form-error";
-import { FormSuccess } from "@/components/form-success";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+
+import { LoginSchema } from "@/schemas";
 
 const LoginForm = () => {
   const [isPending, startTransition] = useTransition();
   const [isShowTwoFactor, setIsShowTwoFactor] = useState(false);
-  const [error, setError] = useState<string | undefined>("");
-  const [success, setSuccess] = useState<string | undefined>("");
 
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? undefined;
@@ -47,107 +54,130 @@ const LoginForm = () => {
   });
 
   const onSubmit = (values: z.infer<typeof LoginSchema>) => {
-    setError("");
-    setSuccess("");
-
     startTransition(() => {
       login(values, callbackUrl)
         .then((data) => {
           if (data?.error) {
             form.reset();
-            setError(data.error);
+            toast.error(data.error, {
+              position: "top-center",
+              duration: 3000,
+              icon: <MdError className="text-xl text-red-500" />,
+            });
           } else if (data?.success) {
             form.reset();
-            setSuccess(data.success);
+            toast.success(data.success, {
+              position: "top-center",
+              duration: 3000,
+              icon: <FaCheckCircle className="text-xl text-green-500" />,
+            });
           } else if (data?.twoFactor) {
             setIsShowTwoFactor(true);
           }
         })
-        .catch(() => setError("Something went wrong"));
+        .catch(() => {
+          toast.error(urlError || "something went wrong", {
+            position: "top-center",
+            duration: 3000,
+          });
+        });
     });
   };
 
   return (
     <CardWrapper
-      headerLabel="Welcome back"
-      backButtonLabel="Don't have an account?"
+      headerLabel={isShowTwoFactor ? "Two factor authentication" : "Sign in"}
+      backButtonLabel={!isShowTwoFactor ? "Already have an account?" : ""}
       backButtonHref="/auth/register"
-      showSocial
+      showSocial={!isShowTwoFactor}
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4">
-            {isShowTwoFactor ? (
+          {isShowTwoFactor ? (
+            <div className="space-y-4 text-center">
+              <div className="grid place-items-center">
+                <InputOTP
+                  maxLength={6}
+                  value={form.watch("code")}
+                  onChange={(value) => form.setValue("code", value)}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                  </InputOTPGroup>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={1} />
+                  </InputOTPGroup>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={2} />
+                  </InputOTPGroup>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={3} />
+                  </InputOTPGroup>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={4} />
+                  </InputOTPGroup>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              {form.getFieldState("code").error && (
+                <p className="text-red-500">
+                  {form.getFieldState("code").error?.message}
+                </p>
+              )}
+              <FormDescription>Enter two factor password.</FormDescription>
+            </div>
+          ) : (
+            <div className="space-y-4">
               <FormField
                 control={form.control}
-                name="code"
+                name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Two Factor Code</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
+                        placeholder="thawatchai.krai@email.com"
+                        type="email"
+                        autoComplete="username"
                         disabled={isPending}
-                        placeholder="123456"
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            ) : (
-              <>
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          disabled={isPending}
-                          placeholder="thawatchai.krai@email.com"
-                          type="email"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          disabled={isPending}
-                          placeholder="******"
-                          type="password"
-                        />
-                      </FormControl>
-                      <Button size="sm" variant="link">
-                        <Link href="/auth/reset">Forgot Password?</Link>
-                      </Button>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
-            )}
-          </div>
-          <FormError message={error ?? urlError} />
-          <FormSuccess message={success} />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="******"
+                        type="password"
+                        autoComplete="current-password"
+                        disabled={isPending}
+                      />
+                    </FormControl>
+                    <Button size="sm" variant="link">
+                      <Link href="/auth/reset">Forgot Password?</Link>
+                    </Button>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
           <Button disabled={isPending} type="submit" className="w-full">
             {isPending ? (
               <ScaleLoader color="#FFF" height={20} />
-            ) : isShowTwoFactor ? (
-              "Confirm"
             ) : (
-              "Login"
+              <>{isShowTwoFactor ? "Confirm" : "Login"}</>
             )}
           </Button>
         </form>

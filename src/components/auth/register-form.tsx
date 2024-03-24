@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import { register } from "@/actions/register";
 
-import { RegisterSchema } from "@/schemas";
+import { toast } from "sonner";
+import { MdError } from "react-icons/md";
+import { FaCheckCircle } from "react-icons/fa";
 
 import {
   Form,
@@ -20,13 +22,11 @@ import {
 import { CardWrapper } from "@/components/auth/card-wrapper";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FormError } from "@/components/form-error";
-import { FormSuccess } from "@/components/form-success";
+
+import { RegisterSchema } from "@/schemas";
 
 const RegisterForm = () => {
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | undefined>("");
-  const [success, setSuccess] = useState<string | undefined>("");
 
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -38,16 +38,30 @@ const RegisterForm = () => {
   });
 
   const onSubmit = (values: z.infer<typeof RegisterSchema>) => {
-    setError("");
-    setSuccess("");
-
     startTransition(() => {
       register(values)
         .then((data) => {
-          setError(data.error);
-          setSuccess(data.success);
+          if (data.error) {
+            toast.error(data.error, {
+              duration: 3000,
+              position: "top-center",
+              icon: <MdError className="text-xl text-red-500" />,
+            });
+          } else {
+            toast.error(data.success, {
+              duration: 3000,
+              position: "top-center",
+              icon: <FaCheckCircle className="text-xl text-green-500" />,
+            });
+          }
         })
-        .catch(() => setError("Something went wrong"));
+        .catch(() => {
+          toast.error("Something went wrong", {
+            duration: 3000,
+            position: "top-center",
+            icon: <FaCheckCircle className="text-xl text-green-500" />,
+          });
+        });
     });
   };
 
@@ -116,8 +130,6 @@ const RegisterForm = () => {
               )}
             />
           </div>
-          <FormError message={error} />
-          <FormSuccess message={success} />
           <Button disabled={isPending} type="submit" className="w-full">
             Create an account
           </Button>
